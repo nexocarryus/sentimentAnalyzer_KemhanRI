@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script>
+        function pindahHalaman() {
+            window.location.href = "{{ url_for('halaman_lain') }}"; 
+        }
+    </script>
+</head>
+<body>
+    <div class="header">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="logo">
+        <div class="title">Sentiment Analyzer</div>
+    </div>
+    <div class="upload-container">
+        <h2>UPLOAD DATASET</h2>
+        <input type="file" id="fileUpload">
+        <br>
+        <button class="upload-btn">Upload</button>
+    </div>
+    <script>
+        document.querySelector(".upload-btn").addEventListener("click", function() {
+    let fileInput = document.getElementById("fileUpload");
+    let file = fileInput.files[0];
+
+    if (!file) {
+        alert("Pilih file terlebih dahulu!");
+        return;
+    }
+
+    let formData = new FormData();
+    formData.append("file", file);
+
+    fetch("/uploads", {
+        method: "POST",
+        body: formData
+    })
+    .then(response => response.json())  
+    .then(data => {
+        alert(data.message);
+        window.location.href = data.redirect_url;  
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert("Terjadi kesalahan: " + error.message);
+    });
+});
+
+    </script>
+</body>
+</html>

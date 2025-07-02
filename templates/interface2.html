@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analyzer - Result</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style1.css') }}">
+    <style>
+        .chart-container {
+            width: 350px;  
+            height: 350px;
+            margin: auto;
+            text-align: center;
+        }
+
+        .chart-title {
+            font-size: 24px;  
+            font-weight: bold;
+            letter-spacing: 10px; 
+            margin-bottom: 15px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="logo">
+        <div class="title">Sentiment Analyzer</div>
+    </div>
+    <div class="content">
+        <div class="chart-container">
+            <h2 class="chart-title">R E S U L T</h2>
+            <canvas id="sentimentChart"></canvas>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Text</th>
+                        <th>Sentiment</th>
+                    </tr>
+                </thead>
+                <tbody id="csvPreview">
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <button class="download-btn" onclick="downloadCSV()">Download CSV</button>
+    
+    <script>
+        async function fetchPredictions() {
+            try {
+                const response = await fetch('/get_predictions');
+                const data = await response.json();
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+    
+                let sentimentCounts = {};
+                const tableBody = document.getElementById("csvPreview");
+                tableBody.innerHTML = "";
+    
+                data.forEach(row => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `<td>${row.mentions}</td><td>${row.sentiment}</td>`;
+                    tableBody.appendChild(tr);
+    
+                    sentimentCounts[row.sentiment] = (sentimentCounts[row.sentiment] || 0) + 1;
+                });
+    
+                updateChart(sentimentCounts);
+            } catch (error) {
+                console.error("Error fetching predictions:", error);
+                alert("Gagal mengambil data prediksi.");
+            }
+        }
+    
+        function updateChart(sentimentCounts) {
+            const ctx = document.getElementById('sentimentChart').getContext('2d');
+    
+            const labels = Object.keys(sentimentCounts);
+            const values = Object.values(sentimentCounts);
+            const total = values.reduce((sum, val) => sum + val, 0);
+    
+          
+            const colorMapping = {
+                "Positif": "#28a745", 
+                "Netral": "#ffc107",  
+                "Negatif": "#dc3545"  
+            };
+    
+            
+            const backgroundColors = labels.map(label => colorMapping[label] || "#6c757d"); 
+    
+            
+            const percentages = values.map(value => ((value / total) * 100).toFixed(1) + "%");
+    
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: backgroundColors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        animateRotate: true,
+                        animateScale: true
+                    },
+                    plugins: {
+                        legend: {
+                            display: labels.length > 1
+                        },
+                        datalabels: {
+                            formatter: (value, context) => percentages[context.dataIndex],
+                            color: '#000',
+                            font: { weight: 'bold', size: 12 },
+                            anchor: 'end',
+                            align: 'start',
+                            offset: 10
+                        }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+        }
+    
+        function downloadCSV() {
+            window.location.href = '/download_predictions';
+        }
+    
+        document.addEventListener('DOMContentLoaded', fetchPredictions);
+    </script>
+    
+</body>
+</html>
